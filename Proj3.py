@@ -4,6 +4,44 @@ import os
 import glob
 import matplotlib.pyplot as plt
 
+# trzeba będzie usunąć rzeczy z cv2
+def gabor_filter(img_gray, ksize=16, sigma=4.0, theta_step=4, freq=0.1):
+
+    img = img_gray.astype(np.float32)
+    result = np.zeros_like(img)
+
+    for i in range(theta_step):
+        theta = np.pi * i / theta_step
+        kernel = cv2.getGaborKernel(
+            (ksize, ksize), sigma, theta, 1.0 / freq, 0.5, 0, ktype=cv2.CV_32F
+        )
+        filtered = cv2.filter2D(img, cv2.CV_32F, kernel)
+        np.maximum(result, filtered, out=result)
+
+    result -= result.min()
+    mx = result.max()
+    if mx > 0:
+        result = result / mx * 255.0
+
+    return result.astype(np.uint8)
+
+
+def morphological_close(img_binary, kernel_size=3, iterations=1):
+
+    kernel = np.ones((kernel_size, kernel_size), dtype=np.float32)
+    n = kernel_size * kernel_size
+
+    result = img_binary.astype(np.float32)
+
+    for _ in range(iterations):
+        dilated = cv2.filter2D(result, cv2.CV_32F, kernel)
+        dilated = np.where(dilated > 0, 255.0, 0.0).astype(np.float32)
+
+        eroded = cv2.filter2D(dilated, cv2.CV_32F, kernel)
+        result = np.where(eroded >= n * 255.0, 255.0, 0.0).astype(np.float32)
+
+    return result.astype(np.uint8)
+
 
 def morphological_skeletonize(img_binary):
     size = np.size(img_binary)

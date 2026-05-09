@@ -68,7 +68,10 @@ def k3m(img_binary, max_iter=1000):
     img = (img_binary > 0).astype(np.uint8)
     h, w = img.shape
 
-    for _ in range(max_iter):
+    for i in range(max_iter):
+
+        if i == max_iter - 1:
+            print('uwaga, nie starczyło kroków')
 
         border = []
         for r in range(1, h - 1):

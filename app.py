@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 
 from k3m import k3m
 
-from Proj3 import morphological_skeletonize
+from Proj3 import morphological_skeletonize, gabor_filter, morphological_close
 
 def np_to_tk(arr, max_size=300):
     if arr.dtype != np.uint8:
@@ -22,9 +22,8 @@ class BiometriaApp:
         self.root.title("Porównanie algorytmów ścieniania")
 
         self.filepath = None
-        self.photo_refs = []  # zapobiegamy garbage collection
+        self.photo_refs = []
 
-        # --- Górny pasek: wybór pliku i przycisk ---
         top = tk.Frame(root)
         top.pack(side=tk.TOP, pady=4)
 
@@ -33,11 +32,10 @@ class BiometriaApp:
         self.label_path.pack(side=tk.LEFT, padx=4)
         tk.Button(top, text="Przetwórz", command=self.process).pack(side=tk.LEFT, padx=4)
 
-        # --- Obszar wyników: 4 kolumny ---
         results = tk.Frame(root)
         results.pack(side=tk.TOP, pady=4)
 
-        labels = ["Oryginał", "Binaryzacja", "Szkielet morfologiczny", "K3M"]
+        labels = ["Oryginał", "Binaryzacja", "Szkielet morfologiczny", "K3M", "K3M + Gabor + Close"]
         self.img_labels = []
         self.caption_labels = []
 
@@ -76,7 +74,12 @@ class BiometriaApp:
         skel_morph = morphological_skeletonize(img_bin)
         skel_k3m = k3m(img_bin)
 
-        images = [img_gray, img_bin, skel_morph, skel_k3m]
+        img_gabor = gabor_filter(img_gray)
+        _, img_bin_gabor = cv2.threshold(img_gabor, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
+        img_closed = morphological_close(img_bin_gabor, kernel_size=3)
+        skel_k3m_gabor = k3m(img_bin_gabor)
+
+        images = [img_gray, img_bin, skel_morph, skel_k3m, skel_k3m_gabor]
 
         self.photo_refs.clear()
         for lbl, arr in zip(self.img_labels, images):
